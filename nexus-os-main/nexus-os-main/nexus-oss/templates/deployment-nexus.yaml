@@ -29,6 +29,9 @@ spec:
           volumeMounts:
             - name: nexus-data
               mountPath: "/mnt/data/nexus"
+          securityContext:
+            allowPrivilegeEscalation: false
+
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
