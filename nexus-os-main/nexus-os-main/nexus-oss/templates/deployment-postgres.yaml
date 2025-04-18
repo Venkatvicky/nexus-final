@@ -31,7 +31,7 @@ spec:
             - name: POSTGRES_PASSWORD
               value: {{ .Values.postgresql.password }}
           volumeMounts:
-            - name: postgresql-data
+            - name: postgresql-data   # <- MUST MATCH volume name below
               mountPath: "/mnt/data/postgresql"
           resources:
             requests:
@@ -45,3 +45,27 @@ spec:
               command:
                 - pg_isready
                 - -U
+                - {{ .Values.postgresql.username }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgresql.username }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: postgresql-data   # <- Must be defined and match above
+          persistentVolumeClaim:
+            claimName: postgresql-pvc
