@@ -14,6 +14,7 @@ spec:
       labels:
         app: postgresql
     spec:
+      automountServiceAccountToken: false
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -32,16 +33,15 @@ spec:
           volumeMounts:
             - name: postgresql-data
               mountPath: "/mnt/data/postgresql"
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # PostgreSQL needs to write to disk
-            capabilities:
-              drop:
-                - ALL
-      volumes:
-        - name: postgresql-data
-          persistentVolumeClaim:
-            claimName: postgresql-pvc
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
