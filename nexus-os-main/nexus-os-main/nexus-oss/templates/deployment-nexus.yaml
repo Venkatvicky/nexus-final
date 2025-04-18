@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nexus
-  namespace: nexus
   labels:
     app: nexus
 spec:
@@ -20,10 +19,6 @@ spec:
           image: {{ .Values.nexus.image }}
           ports:
             - containerPort: 8081
-          securityContext:
-            capabilities:
-              drop:
-                - NET_RAW
           env:
             - name: POSTGRES_DB
               value: {{ .Values.postgresql.database }}
@@ -31,19 +26,13 @@ spec:
               value: {{ .Values.postgresql.username }}
             - name: POSTGRES_PASSWORD
               value: {{ .Values.postgresql.password }}
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "500m"
-              memory: "1Gi"
           volumeMounts:
             - name: nexus-data
               mountPath: "/mnt/data/nexus"
           securityContext:
-            allowPrivilegeEscalation: false
-
+            capabilities:
+              drop:
+                - NET_RAW
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
