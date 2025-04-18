@@ -20,6 +20,10 @@ spec:
           image: {{ .Values.nexus.image }}
           ports:
             - containerPort: 8081
+          securityContext:
+            capabilities:
+              drop:
+                - NET_RAW
           env:
             - name: POSTGRES_DB
               value: {{ .Values.postgresql.database }}
