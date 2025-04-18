@@ -1,5 +1,5 @@
 nexus:
-  image: sonatype/nexus3:latest
+  image: sonatype/nexus3@sha256:0db7836f72ec4e85e2770fa22ab75823c239c45cf8162983caab092dcb88846d
   service:
     type: LoadBalancer
     port: 8081
