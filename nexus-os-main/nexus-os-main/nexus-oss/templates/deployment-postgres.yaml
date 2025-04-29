@@ -22,4 +22,3 @@ spec:
       containers:
         - name: postgresql
           image: postgres:13  # Fixed version
-          image
