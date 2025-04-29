@@ -14,40 +14,51 @@ spec:
         app: nexus
     spec:
       securityContext:
-        fsGroup: 1000
-        runAsUser: 1000
-        runAsGroup: 1000
         runAsNonRoot: true
+        fsGroup: 1000
       initContainers:
         - name: fix-permissions
           image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              echo "Setting permissions for /nexus-data"
-              chown -R 1000:1000 /nexus-data || echo "chown failed"
-              chmod -R 755 /nexus-data || echo "chmod failed"
+          command: ["/bin/sh", "-c"]
+          args:
+            - chown -R 1000:1000 /nexus-data || echo "warn: chown failed"
           volumeMounts:
             - name: nexus-data
               mountPath: /nexus-data
       containers:
         - name: nexus
           image: sonatype/nexus3:3.71.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secret
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexus-secret
+                  key: POSTGRES_PASSWORD
           volumeMounts:
             - name: nexus-data
               mountPath: /nexus-data
           readinessProbe:
             httpGet:
-              path: /
+              path: /service/metrics
               port: 8081
             initialDelaySeconds: 30
             periodSeconds: 15
           livenessProbe:
             httpGet:
-              path: /
+              path: /service/metrics
               port: 8081
             initialDelaySeconds: 60
             periodSeconds: 30
