@@ -2,12 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nexus-ingress
-  namespace: nexus            # Specify the custom namespace
+  namespace: nexus
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
+  ingressClassName: nginx  # Ensure this matches your Ingress Controller class
   rules:
-    - host: {{ .Values.ingress.host }}  # Define the host dynamically
+    - host: nexus.example.com  # Replace with your actual domain (e.g. nexus.cloudmasa.app)
       http:
         paths:
           - path: /
