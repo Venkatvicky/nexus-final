@@ -22,3 +22,48 @@ spec:
       containers:
         - name: postgresql
           image: postgres:13  # Fixed version
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "nexusdb"
+            - name: POSTGRES_USER
+              value: "nexus"
+            - name: POSTGRES_PASSWORD
+              value: "nexuspassword"
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: "/mnt/data/postgresql"
+          readinessProbe:  # Readiness probe (for databases better to use TCP)
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:  # Liveness probe
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+            successThreshold: 1
+          resources:  # CPU and Memory requests/limits
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          securityContext:  # Container-level security context
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: postgresql-pvc
