@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nexus
-  namespace: nexus            # Avoid default namespace
+  namespace: nexus  # Avoid default namespace
   labels:
     app: nexus
 spec:
@@ -18,6 +18,7 @@ spec:
       containers:
         - name: nexus
           image: sonatype/nexus3:3.71.0   # Use a fixed version tag
+          imagePullPolicy: Always         # Always pull the latest image
           ports:
             - containerPort: 8081
           env:
@@ -47,6 +48,28 @@ spec:
             periodSeconds: 15
             failureThreshold: 3
             successThreshold: 1
+          livenessProbe:  # Liveness Probe added
+            httpGet:
+              path: /service/metrics
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+          resources:  # CPU and memory requests/limits
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          securityContext:  # Security context applied
+            runAsUser: 1000  # Non-root user
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false  # Prevent privilege escalation
+            capabilities:
+              drop:
+                - ALL  # Drop all unnecessary capabilities
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
