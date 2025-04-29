@@ -15,13 +15,29 @@ spec:
       labels:
         app: postgresql
     spec:
-      securityContext:  # Pod-level security context
+      securityContext:
         runAsNonRoot: true
         fsGroup: 1000
-      automountServiceAccountToken: false  # Disable service account token mount
+      automountServiceAccountToken: false
+      initContainers:
+        - name: init-permissions
+          image: busybox
+          command:
+            - sh
+            - -c
+          args:
+            - |
+              echo "Fixing permissions for PostgreSQL"
+              chown -R 1000:1000 /mnt/data/postgresql || echo "chown failed"
+              chmod 700 /mnt/data/postgresql || echo "chmod failed"
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /mnt/data/postgresql
+          securityContext:
+            runAsUser: 0  # Root required for chown
       containers:
         - name: postgresql
-          image: postgres:13  # Fixed version
+          image: postgres:13
           imagePullPolicy: Always
           ports:
             - containerPort: 5432
@@ -34,29 +50,29 @@ spec:
               value: "nexuspassword"
           volumeMounts:
             - name: postgresql-data
-              mountPath: "/mnt/data/postgresql"
-          readinessProbe:  # Readiness probe (for databases better to use TCP)
+              mountPath: "/var/lib/postgresql/data"
+          readinessProbe:
             tcpSocket:
               port: 5432
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 3
             successThreshold: 1
-          livenessProbe:  # Liveness probe
+          livenessProbe:
             tcpSocket:
               port: 5432
             initialDelaySeconds: 30
             periodSeconds: 15
             failureThreshold: 3
             successThreshold: 1
-          resources:  # CPU and Memory requests/limits
+          resources:
             requests:
               memory: "1Gi"
               cpu: "500m"
             limits:
               memory: "2Gi"
               cpu: "1000m"
-          securityContext:  # Container-level security context
+          securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             allowPrivilegeEscalation: false
