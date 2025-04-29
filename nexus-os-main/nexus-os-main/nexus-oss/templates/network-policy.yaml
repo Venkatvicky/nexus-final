@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexus-network-policy
+  namespace: nexus
+spec:
+  podSelector:
+    matchLabels:
+      app: nexus  # Select Nexus pods only
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}  # Allow traffic from any pod inside the namespace
+      ports:
+        - protocol: TCP
+          port: 8081  # Only allow access on Nexus port
+  egress:
+    - to:
+        - podSelector: {}  # Allow outbound traffic to any pod
+      ports:
+        - protocol: TCP
