@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nexus
+  namespace: nexus         # ✅ Set namespace
   labels:
     app: nexus
 spec:
@@ -29,6 +30,13 @@ spec:
           volumeMounts:
             - name: nexus-data
               mountPath: "/mnt/data/nexus"
+          resources:             # ✅ Add CPU/memory requests and limits
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
