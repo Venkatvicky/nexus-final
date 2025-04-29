@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgresql
-  namespace: nexus  # Use custom namespace
+  namespace: nexus
   labels:
     app: postgresql
 spec:
@@ -16,9 +16,7 @@ spec:
         app: postgresql
     spec:
       securityContext:
-        runAsNonRoot: true
-        fsGroup: 1000
-      automountServiceAccountToken: false
+        fsGroup: 999
       initContainers:
         - name: init-permissions
           image: busybox
@@ -27,14 +25,14 @@ spec:
             - -c
           args:
             - |
-              echo "Fixing permissions for PostgreSQL"
-              chown -R 1000:1000 /mnt/data/postgresql || echo "chown failed"
-              chmod 700 /mnt/data/postgresql || echo "chmod failed"
+              echo "Fixing permissions for PostgreSQL volume"
+              chown -R 999:999 /var/lib/postgresql/data || echo "chown failed"
+              chmod 700 /var/lib/postgresql/data || echo "chmod failed"
           volumeMounts:
             - name: postgresql-data
-              mountPath: /mnt/data/postgresql
+              mountPath: /var/lib/postgresql/data
           securityContext:
-            runAsUser: 0  # Root required for chown
+            runAsUser: 0  # root is required to change ownership
       containers:
         - name: postgresql
           image: postgres:13
@@ -50,21 +48,19 @@ spec:
               value: "nexuspassword"
           volumeMounts:
             - name: postgresql-data
-              mountPath: "/var/lib/postgresql/data"
+              mountPath: /var/lib/postgresql/data
           readinessProbe:
             tcpSocket:
               port: 5432
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 3
-            successThreshold: 1
           livenessProbe:
             tcpSocket:
               port: 5432
             initialDelaySeconds: 30
             periodSeconds: 15
             failureThreshold: 3
-            successThreshold: 1
           resources:
             requests:
               memory: "1Gi"
@@ -73,8 +69,8 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
+            runAsUser: 999
+            runAsGroup: 999
             allowPrivilegeEscalation: false
             capabilities:
               drop:
