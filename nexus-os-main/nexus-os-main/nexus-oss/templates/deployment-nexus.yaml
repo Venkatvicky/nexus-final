@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: nexus
   namespace: nexus
+  labels:
+    app: nexus
 spec:
   replicas: 1
   selector:
@@ -14,17 +16,27 @@ spec:
         app: nexus
     spec:
       securityContext:
-        runAsNonRoot: true
         fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
       initContainers:
-        - name: fix-permissions
+        - name: init-nexus-permissions
           image: busybox
-          command: ["/bin/sh", "-c"]
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
           args:
-            - chown -R 1000:1000 /nexus-data || echo "warn: chown failed"
+            - |
+              echo "Setting permissions for /nexus-data"
+              chown -R 1000:1000 /nexus-data || echo "chown failed"
+              chmod -R 755 /nexus-data || echo "chmod failed"
           volumeMounts:
             - name: nexus-data
               mountPath: /nexus-data
+          securityContext:
+            runAsUser: 0  # root needed for chown
       containers:
         - name: nexus
           image: sonatype/nexus3:3.71.0
@@ -50,32 +62,29 @@ spec:
           volumeMounts:
             - name: nexus-data
               mountPath: /nexus-data
-          readinessProbe:
-            httpGet:
-              path: /service/metrics
-              port: 8081
-            initialDelaySeconds: 30
-            periodSeconds: 15
           livenessProbe:
             httpGet:
               path: /service/metrics
               port: 8081
+              scheme: HTTP
             initialDelaySeconds: 60
             periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /service/metrics
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
           resources:
             requests:
-              memory: "1Gi"
               cpu: "500m"
+              memory: "1Gi"
             limits:
-              memory: "2Gi"
               cpu: "1000m"
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
+              memory: "2Gi"
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
