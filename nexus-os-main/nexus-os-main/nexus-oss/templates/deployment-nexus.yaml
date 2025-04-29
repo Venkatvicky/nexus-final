@@ -15,6 +15,10 @@ spec:
       labels:
         app: nexus
     spec:
+      securityContext:  # POD-level security context
+        runAsNonRoot: true
+        fsGroup: 1000
+      automountServiceAccountToken: false  # Disable unnecessary service account token mount
       containers:
         - name: nexus
           image: sonatype/nexus3:3.71.0   # Use a fixed version tag
@@ -40,7 +44,7 @@ spec:
           volumeMounts:
             - name: nexus-data
               mountPath: "/mnt/data/nexus"
-          readinessProbe:
+          readinessProbe:  # Readiness probe
             httpGet:
               path: /service/metrics
               port: 8081
@@ -48,7 +52,7 @@ spec:
             periodSeconds: 15
             failureThreshold: 3
             successThreshold: 1
-          livenessProbe:  # Liveness Probe added
+          livenessProbe:  # Liveness probe
             httpGet:
               path: /service/metrics
               port: 8081
@@ -63,13 +67,13 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1000m"
-          securityContext:  # Security context applied
-            runAsUser: 1000  # Non-root user
+          securityContext:  # Container-level security context
+            runAsUser: 1000
             runAsGroup: 1000
-            allowPrivilegeEscalation: false  # Prevent privilege escalation
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
-                - ALL  # Drop all unnecessary capabilities
+                - ALL
       volumes:
         - name: nexus-data
           persistentVolumeClaim:
