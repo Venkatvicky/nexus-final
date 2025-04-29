@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgresql
+  namespace: nexus            # Use a custom namespace
   labels:
     app: postgresql
 spec:
@@ -16,19 +17,50 @@ spec:
     spec:
       containers:
         - name: postgresql
-          image: {{ .Values.postgresql.image }}
+          image: postgres:13      # Use a fixed version tag (change as needed)
+          imagePullPolicy: Always  # Always pull the latest image
           ports:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
-              value: {{ .Values.postgresql.database }}
+              value: "nexusdb"    # Example database name
             - name: POSTGRES_USER
-              value: {{ .Values.postgresql.username }}
+              value: "nexus"      # Example user
             - name: POSTGRES_PASSWORD
-              value: {{ .Values.postgresql.password }}
+              value: "nexuspassword"  # Example password
           volumeMounts:
             - name: postgresql-data
               mountPath: "/mnt/data/postgresql"
+          readinessProbe:  # Readiness Probe
+            httpGet:
+              path: /health
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:  # Liveness Probe
+            httpGet:
+              path: /health
+              port: 5432
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+            successThreshold: 1
+          resources:  # CPU and Memory Requests/Limits
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          securityContext:  # Security Context
+            runAsUser: 1000  # Non-root user
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL  # Drop unnecessary capabilities
       volumes:
         - name: postgresql-data
           persistentVolumeClaim:
